@@ -1,0 +1,68 @@
+<!-- In templates/ml_pipeline_start.html -->
+
+<!DOCTYPE html>
+<html lang="en"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ML Pipeline Mode Selection</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="mb-4 text-center">ML Experimental Pipeline</h1>
+        <p class="lead text-center">How would you like to proceed?</p>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="list-group col-md-8 mx-auto">
+            {% if has_existing_experiments %}
+            <a href="{{ url_for('all_experiments_summary') }}" class="list-group-item list-group-item-warning d-flex align-items-center mb-2">
+                <i class="fas fa-play-circle fa-2x mr-3"></i>
+                <div>
+                    <h5 class="mb-1">Continue Previous Session</h5>
+                    <small>View or generate code for experiments already run in this session.</small>                </div>
+            </a>
+            <hr> {# Separator #}
+            {% endif %}
+            <a href="{{ url_for('upload_dataset') }}" class="list-group-item list-group-item-success d-flex align-items-center mb-2">
+                <i class="fas fa-upload fa-2x mr-3"></i>
+                <div>
+                    <h5 class="mb-1">Upload CSV Dataset (New Experiment)</h5>
+                    <small>Upload your CSV file for automatic EDA and metadata extraction. (Will clear previous experiments if any)</small>
+                </div>
+            </a>
+            <a href="{{ url_for('run_experiment') }}" class="list-group-item list-group-item-info d-flex align-items-center mb-2">
+                <i class="fas fa-keyboard fa-2x mr-3"></i>                <div>
+                    <h5 class="mb-1">Enter Metadata Manually (New Experiment)</h5>
+                    <small>Manually input all experiment parameters for research purposes. (Will clear previous experiments if any)</small>                </div>
+            </a>
+            {% if has_existing_experiments %}
+            <a href="{{ url_for('clear_ml_session') }}" class="list-group-item list-group-item-danger d-flex align-items-center mt-3">
+                <i class="fas fa-trash-alt fa-2x mr-3"></i>
+                <div>
+                    <h5 class="mb-1">Start New ML Session (Clear All)</h5>
+                    <small>Completely clear all previous experiment data and start fresh.</small>
+                </div>
+            </a>
+            {% endif %}
+        </div>
+        <div class="text-center mt-4">
+            <a href="{{ url_for('home') }}" class="btn btn-secondary"><i class="fas fa-arrow-left mr-2"></i>Back to Home</a>
+        </div>
+    </div>    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>

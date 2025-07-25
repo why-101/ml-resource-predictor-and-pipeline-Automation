@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQL to NoSQL Converter</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        pre {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            padding: 15px;
+            border-radius: .25rem;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap; /* Allows long lines to wrap */
+            word-wrap: break-word; /* Breaks words if they are too long */
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="mb-4 text-center">SQL to NoSQL Code Converter</h1>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <form method="POST" class="mb-4">
+            <div class="form-group">
+                <label for="sql_query">Enter your MySQL Query:</label>
+                <textarea class="form-control" id="sql_query" name="sql_query" rows="8" placeholder="e.g., SELECT * FROM users WHERE age > 30;" required>{{ request.form.sql_query }}</textarea>
+            </div>
+            <div class="form-group">
+                <label for="target_db">Target NoSQL Database:</label>
+                <select class="form-control" id="target_db" name="target_db">
+                    <option value="MongoDB" {% if request.form.target_db == 'MongoDB' or not request.form.target_db %}selected{% endif %}>MongoDB</option>
+                    <option value="Cassandra" {% if request.form.target_db == 'Cassandra' %}selected{% endif %}>Cassandra</option>
+                    <option value="DynamoDB" {% if request.form.target_db == 'DynamoDB(PartiQL)' %}selected{% endif %}>DynamoDB</option>
+                    <!-- Add more NoSQL options if the Gemini model supports them -->
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary btn-lg"><i class="fas fa-exchange-alt mr-2"></i>Convert Query</button>
+        </form>
+
+        {% if code %}
+            <h2 class="mt-5">Converted NoSQL Code:</h2>
+            <pre class="bg-light p-3 rounded border">{{ code }}</pre>
+        {% endif %}
+
+        <div class="mt-4 text-center">
+            <a href="{{ url_for('home') }}" class="btn btn-secondary"><i class="fas fa-arrow-left mr-2"></i>Back to Home</a>
+        </div>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generate ML Code</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        pre {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            padding: 15px;
+            border-radius: .25rem;
+            max-height: 500px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .code-block {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>    <div class="container-fluid mt-5">
+        <h1 class="mb-4 text-center">Generate & Evaluate ML Model Code</h1>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% if last_results %}
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-microchip mr-2"></i>Selected Model from Last Experiment</h5>
+                </div>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item"><strong>Algorithm:</strong> {{ last_results.algorithm }}</li>
+                    <li class="list-group-item"><strong>Task Type:</strong> {{ last_results.task_type | title }}</li>
+                    <li class="list-group-item"><strong>Records:</strong> {{ last_results.records }}</li>
+                    <li class="list-group-item"><strong>Features:</strong> {{ last_results.features }}</li>
+                    <li class="list-group-item"><strong>Split Ratio:</strong> {{ last_results.split_ratio }}</li>
+                </ul>
+            </div>
+
+            <form method="POST" class="mb-4">
+                <div class="form-group">
+                    <label for="target_variable">Target Variable Name:</label>
+                    <input type="text" class="form-control" id="target_variable" name="target_variable" required list="column_names" value="{{ current_target_variable }}">
+                    <small class="form-text text-muted">Use one of your dataset columns:
+                        {% for col in df_columns %}
+                            <code>{{ col }}</code>{% if not loop.last %}, {% endif %}
+                        {% endfor %}
+                    </small>
+                    <datalist id="column_names">
+                        {% for col in df_columns %}
+                            <option value="{{ col }}">
+                        {% endfor %}
+                    </datalist>
+                </div>
+
+                <div class="form-group">
+                    <label for="preprocessing">Preprocessing Method:</label>
+                    <select class="form-control" id="preprocessing" name="preprocessing">
+                        <option value="None" {% if current_preprocessing == 'None' %}selected{% endif %}>None</option>
+                        <option value="StandardScaler" {% if current_preprocessing == 'StandardScaler' %}selected{% endif %}>StandardScaler</option>
+                        <option value="MinMaxScaler" {% if current_preprocessing == 'MinMaxScaler' %}selected{% endif %}>MinMaxScaler</option>
+                        <option value="RobustScaler" {% if current_preprocessing == 'RobustScaler' %}selected{% endif %}>RobustScaler</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Select Evaluation Metric(s):</label>
+                    <div class="form-check">
+                        {% for metric in available_metrics %}
+                            <input class="form-check-input" type="checkbox" name="metrics" value="{{ metric }}" id="metric_{{ metric }}"
+                                {% if metric in current_metrics %}checked{% endif %}>
+                            <label class="form-check-label" for="metric_{{ metric }}">{{ metric | replace('_', ' ') | title }}</label><br>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <button type="submit" name="action" value="generate" class="btn btn-success btn-lg"><i class="fas fa-magic mr-2"></i>Generate & Run Code</button>
+            </form>
+
+            {% if generated_code %}
+                <h2 class="mt-5">Generated Python Code:</h2>
+                <pre class="code-block bg-light p-3 rounded border">{{ generated_code }}</pre>
+
+                <h2 class="mt-4">Code Execution Output:</h2>
+                {% if execution_success %}
+                    <div class="alert alert-success">
+                        <strong>Execution Successful!</strong>
+                    </div>
+                {% else %}
+                    <div class="alert alert-danger">
+                        <strong>Execution Failed!</strong> Check the output for errors.
+                    </div>
+                {% endif %}
+                <pre class="code-block bg-light p-3 rounded border">{{ execution_output }}</pre>
+
+                <form method="POST" class="mt-4">
+                    <input type="hidden" name="target_variable" value="{{ current_target_variable }}">
+                    <input type="hidden" name="preprocessing" value="{{ current_preprocessing }}">
+                    {% for metric in current_metrics %}
+                        <input type="hidden" name="metrics" value="{{ metric }}">
+                    {% endfor %}
+                    <input type="hidden" name="execution_output" value="{{ execution_output }}">
+                    <button type="submit" name="action" value="improve" class="btn btn-warning btn-lg"><i class="fas fa-lightbulb mr-2"></i>Ask AI to Improve Code</button>
+                </form>
+            {% endif %}
+
+        {% else %}
+            <div class="alert alert-info text-center" role="alert">
+                No previous experiment found. Please run an <a href="{{ url_for('run_experiment') }}">ML Experiment</a> first.
+            </div>
+        {% endif %}
+        <div class="mt-4 mb-5 text-center">
+            <a href="{{ url_for('run_experiment') }}" class="btn btn-secondary mr-3"><i class="fas fa-arrow-left mr-2"></i>Back to Experiment Prediction</a>
+            <a href="{{ url_for('ml_pipeline_start') }}" class="btn btn-info mr-3"><i class="fas fa-backward mr-2"></i>Back to ML Pipeline Start</a>
+            <a href="{{ url_for('home') }}" class="btn btn-dark"><i class="fas fa-home mr-2"></i>Home</a>
+        </div>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>

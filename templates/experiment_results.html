@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Experiment Results</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="mb-4 text-center">ML Performance Prediction Results</h1>
+        {% with messages = get_flashed_messages(with_categories=true) %}            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-chart-bar mr-2"></i>Results for {{ current_result.Model }} ({{ current_result.algorithm }})</h5>
+            </div>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <strong>Training Time (seconds):</strong>
+                    <span class="badge badge-pill badge-info">{{ current_result.TrainingTime_s }}</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <strong>Memory Usage (MB):</strong>                    <span class="badge badge-pill badge-info">{{ current_result.MemoryUsage_MB }}</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <strong>Model Size (MB):</strong>
+                    <span class="badge badge-pill badge-info">{{ current_result.ModelSize_MB }}</span>
+                </li>
+            </ul>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0"><i class="fas fa-info-circle mr-2"></i>Input Parameters</h5>
+            </div>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item"><strong>Task Type:</strong> {{ current_result.task_type | title }}</li>
+                <li class="list-group-item"><strong>Dataset Size (MB):</strong> {{ current_result.size_mb }}</li>
+                <li class="list-group-item"><strong>Records:</strong> {{ current_result.records }}</li>
+                <li class="list-group-item"><strong>Features:</strong> {{ current_result.features }}</li>
+                <li class="list-group-item"><strong>Split Ratio:</strong> {{ current_result.split_ratio }}</li>
+                <li class="list-group-item"><strong>RAM (GB):</strong> {{ current_result.ram_gb }}</li>
+                <li class="list-group-item"><strong>Processor Match:</strong> {{ 'Yes' if current_result.processor_flag else 'No' }}</li>
+            </ul>
+        </div>
+
+        <div class="mt-4 text-center">
+            <p class="lead">You have simulated <strong>{{ total_experiments }}</strong> experiment(s) so far.</p>
+            <a href="{{ url_for('run_experiment') }}" class="btn btn-primary btn-lg mr-3"><i class="fas fa-plus-circle mr-2"></i>Run Another Experiment</a>
+            <a href="{{ url_for('all_experiments_summary') }}" class="btn btn-info btn-lg mr-3"><i class="fas fa-list-alt mr-2"></i>View All Experiment Summaries</a>
+            <a href="{{ url_for('ml_pipeline_start') }}" class="btn btn-secondary btn-lg"><i class="fas fa-arrow-left mr-2"></i>Back to ML Pipeline Start</a>
+        </div>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>

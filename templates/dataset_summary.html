@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dataset Summary</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        pre {
+            white-space: pre-wrap; /* Allows long lines to wrap */
+            word-wrap: break-word; /* Breaks words if they are too long */
+        }
+        .table-container {
+            max-height: 400px; /* Limit height for tables */
+            overflow-y: auto; /* Add scrollbar if content exceeds height */
+            border: 1px solid #dee2e6; /* Add a border for visual separation */
+            margin-bottom: 1rem;
+            background-color: #fff;
+        }
+        .table-container table {
+            margin-bottom: 0; /* Remove default table margin */
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            border: 1px solid #ddd;
+            padding: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid mt-5">
+        <h1 class="mb-4 text-center">Dataset Summary & EDA</h1>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="row">
+            <div class="col-md-6">
+                <h2 class="mt-4">Head of Dataset</h2>
+                <div class="table-container">
+                    {{ head | safe }}
+                </div>
+            </div>
+            <div class="col-md-6">
+                <h2 class="mt-4">Dataset Info</h2>
+                <pre class="bg-light p-3 rounded border">{{ info }}</pre>
+            </div>
+        </div>
+
+        <h2 class="mt-4">Statistical Summary</h2>
+        <div class="table-container">
+            {{ description | safe }}
+        </div>
+
+        <div class="row">
+            <div class="col-md-6">
+                <h2 class="mt-4">Null Values Per Column</h2>
+                <div class="table-container">
+                    {{ nulls | safe }}
+                </div>
+            </div>
+            <div class="col-md-6">
+                <h2 class="mt-4">Unique Values Per Column</h2>
+                <div class="table-container">
+                    {{ unique_values | safe }}
+                </div>
+            </div>
+        </div>
+
+        <p class="mt-3"><strong>Duplicate Records:</strong> {{ duplicates }}</p>
+
+        <h2 class="mt-4">Correlation Analysis</h2>
+        {% if corr_matrix_table %}
+            <h3 class="mt-3">Correlation Matrix Table</h3>
+            <div class="table-container">
+                {{ corr_matrix_table | safe }}
+            </div>
+        {% else %}
+            <p class="mt-4 alert alert-info text-center">No sufficient numerical columns to display correlation matrix table.</p>
+        {% endif %}
+
+        {% if corr_img %}
+            <h3 class="mt-3">Correlation Heatmap</h3>
+            <div class="text-center">
+                <img src="{{ corr_img }}" alt="Correlation Heatmap" class="plot-img"/>
+                <small class="form-text text-muted mt-2">Correlation heatmap of numerical features.</small>
+            </div>
+        {% else %}
+            <p class="mt-4 alert alert-info text-center">No sufficient numerical columns found to generate a correlation heatmap.</p>
+        {% endif %}
+
+        <h2 class="mt-4">Numerical Feature Boxplot</h2>
+        {% if boxplot_img %}
+            <div class="text-center">
+                <img src="{{ boxplot_img }}" alt="Boxplot of Numerical Features" class="plot-img"/>
+                <small class="form-text text-muted mt-2">Boxplot displaying distribution and outliers for numerical features.</small>
+            </div>
+        {% elif boxplot_info_message %}
+            <p class="mt-4 alert alert-info text-center">{{ boxplot_info_message }}</p>
+        {% else %}
+            <p class="mt-4 alert alert-info text-center">No numerical columns found to generate a boxplot.</p>
+        {% endif %}
+
+        <div class="alert alert-warning mt-5 text-center" role="alert">
+            <strong>Plot Interpretation Tip:</strong> If the plots (especially boxplots) appear very flat or narrow, it might indicate that your dataset's numerical features have very low variance, or they have already been scaled/normalized (e.g., to a 0-1 range) before upload.
+        </div>
+
+        <div class="mt-5 mb-5 text-center">
+            <a href="{{ url_for('run_experiment') }}" class="btn btn-primary btn-lg mr-3"><i class="fas fa-chart-line mr-2"></i>Proceed to Run Experiment</a>
+            <a href="{{ url_for('ml_pipeline_start') }}" class="btn btn-secondary btn-lg"><i class="fas fa-arrow-left mr-2"></i>Back to ML Pipeline Start</a>
+        </div>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>
