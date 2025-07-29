@@ -581,12 +581,12 @@ def generate_ml_code(experiment_idx):
     # --- Debugging: Comprehensive logging at the start of the request ---
     app.logger.debug(f"Entering generate_ml_code for index {experiment_idx}")
     app.logger.debug(f"Current session keys: {list(session.keys())}")
+
     if 'all_experiment_results' in session:
         app.logger.debug(f"session['all_experiment_results'] content (first 2 items): {session['all_experiment_results'][:2]}")
         app.logger.debug(f"Length of session['all_experiment_results']: {len(session['all_experiment_results'])}")
     else:
         app.logger.debug("session['all_experiment_results'] is NOT present in session.")
-    # --- End Debugging ---
 
     # --- Consolidated and robust validation at the very beginning ---
     if genai is None:
@@ -618,6 +618,7 @@ def generate_ml_code(experiment_idx):
     mode_choice_manual = session.get('mode_choice_manual', False)
 
     available_metrics = metric_options.get(selected_experiment['task_type'], [])
+    app.logger.debug(f"Available metrics for task '{selected_experiment['task_type']}': {available_metrics}")
 
     generated_code = None
     execution_output = None
@@ -628,37 +629,60 @@ def generate_ml_code(experiment_idx):
     if 'prompt_history' not in session or not isinstance(session['prompt_history'], dict):
         session['prompt_history'] = {}
         session.modified = True
+        app.logger.debug("Initialized 'prompt_history' in session.")
 
     experiment_history_key = str(experiment_idx)
     if experiment_history_key not in session['prompt_history'] or not isinstance(session['prompt_history'][experiment_history_key], list):
         session['prompt_history'][experiment_history_key] = []
         session.modified = True
+        app.logger.debug(f"Initialized 'prompt_history[{experiment_history_key}]' in session.")
 
+    # Read current form values, fallback defaults for GET requests
     current_target_variable = request.form.get('target_variable', '')
     current_preprocessing = request.form.get('preprocessing', 'None')
-    current_metrics = request.form.getlist('metrics', [])
+    current_metrics = request.form.getlist('metrics') if request.method == 'POST' else []
+
+    app.logger.debug(f"Form values - target_variable: {current_target_variable}, preprocessing: {current_preprocessing}, metrics: {current_metrics}")
 
     if request.method == 'POST':
-        action = request.form.get('action')
+        action = request.form.get('action', '')
+        app.logger.debug(f"POST action requested: '{action}'")
+
+        # Re-fetch form fields on POST to ensure updated values for generate/improve
+        current_target_variable = request.form.get('target_variable', '').strip()
+        current_preprocessing = request.form.get('preprocessing', 'None').strip()
+        current_metrics = request.form.getlist('metrics')
+
+        app.logger.debug(f"Updated form data - target_variable: {current_target_variable}, preprocessing: {current_preprocessing}, metrics: {current_metrics}")
+
+        # Safely join metrics string for prompt
+        if not isinstance(current_metrics, list):
+            app.logger.warning(f"Expected current_metrics as list but got {type(current_metrics)}. Resetting to empty list.")
+            current_metrics = []
+        metrics_str = ', '.join(current_metrics) if current_metrics else 'none'
 
         if action == 'generate':
-            current_target_variable = request.form.get('target_variable')
-            current_preprocessing = request.form.get('preprocessing')
-            current_metrics = request.form.getlist('metrics')
-
+            # Validation on the target variable
             if not current_target_variable:
                 flash("Please enter a target variable.", "warning")
+                app.logger.warning("Target variable empty on code generation request.")
                 return render_template(
                     'generate_ml_code.html',
                     experiment_idx=experiment_idx,
                     selected_experiment=selected_experiment,
+                    last_results=selected_experiment,
                     df_columns=df_columns,
                     available_metrics=available_metrics,
+                    generated_code=None,
+                    execution_output=None,
+                    execution_success=False,
+                    error=None,
                     current_target_variable=current_target_variable,
                     current_preprocessing=current_preprocessing,
                     current_metrics=current_metrics,
                 )
 
+            # Compose the prompt template
             prompt_template = f"""
 You are an expert ML assistant. Generate Python code using scikit-learn to train and evaluate a {selected_experiment['task_type']} model.
 
@@ -681,27 +705,33 @@ Required Steps:
 - Apply the specified preprocessing.
 - Train the model.
 - Predict on the test set.
-- Calculate and print the following evaluation metrics: {', '.join(current_metrics)}.
+- Calculate and print the following evaluation metrics: {metrics_str}.
 - If it's a classification task, also print a `classification_report`.
 
 Only generate executable Python code. Do not include any explanations, markdown code fences, or extra text outside the code.
 """
+            # Save prompt in session history
             session['prompt_history'][experiment_history_key] = [prompt_template]
+            session.modified = True
+            app.logger.debug(f"Generated new prompt template:\n{prompt_template}")
 
         elif action == 'improve':
-            feedback_output = request.form.get('execution_output', '')
-            current_target_variable = request.form.get('target_variable')
-            current_preprocessing = request.form.get('preprocessing')
+            feedback_output = request.form.get('execution_output', '').strip()
+            current_target_variable = request.form.get('target_variable', '').strip()
+            current_preprocessing = request.form.get('preprocessing', 'None').strip()
             current_metrics = request.form.getlist('metrics')
+            if not isinstance(current_metrics, list):
+                current_metrics = []
+            metrics_str = ', '.join(current_metrics) if current_metrics else 'none'
 
+            app.logger.debug(f"Improve action with feedback output length {len(feedback_output)} chars.")
             if not session['prompt_history'][experiment_history_key]:
-                flash(
-                    "No previous code generation found to improve upon for this experiment.",
-                    "warning",
-                )
+                flash("No previous code generation found to improve upon for this experiment.", "warning")
+                app.logger.warning(f"No prompt history found to improve for experiment {experiment_history_key}.")
                 return redirect(url_for('generate_ml_code', experiment_idx=experiment_idx))
 
             last_prompt = session['prompt_history'][experiment_history_key][-1]
+            app.logger.debug(f"Last prompt length: {len(last_prompt)} characters.")
 
             prompt_template = f"""
 {last_prompt}
@@ -710,19 +740,24 @@ The previous code execution resulted in the following output:
 --- BEGIN EXECUTION OUTPUT ---
 {feedback_output}
 --- END EXECUTION OUTPUT ---
-Please regenerate the code with improvements. Focus on enhancing the model's performance (e.g., by refining preprocessing, hyperparameter tuning, or trying alternative approaches) to achieve better {', '.join(current_metrics)}.
+Please regenerate the code with improvements. Focus on enhancing the model's performance (e.g., by refining preprocessing, hyperparameter tuning, or trying alternative approaches) to achieve better {metrics_str}.
 
 Only generate updated executable Python code. Do not include any explanations, markdown code fences, or extra text outside the code.
 """
             session['prompt_history'][experiment_history_key].append(prompt_template)
+            session.modified = True
+            app.logger.debug("Appended improved prompt template to prompt history.")
 
         else:
             flash("Invalid action.", "danger")
+            app.logger.warning(f"Invalid action received in generate_ml_code route: '{action}'")
             return redirect(url_for('generate_ml_code', experiment_idx=experiment_idx))
 
         try:
+            app.logger.debug("Sending prompt to Gemini model for ML code generation...")
             response = gemini_model_for_ml_code.generate_content(prompt_template)
             generated_code = response.text.strip()
+            app.logger.debug(f"Received generated code of length {len(generated_code)} characters.")
 
             exec_success, exec_output, exec_error = clean_and_execute_ml_code(
                 generated_code, dataset_path, df_columns, current_target_variable, selected_experiment['task_type']
@@ -731,23 +766,26 @@ Only generate updated executable Python code. Do not include any explanations, m
             execution_success = exec_success
             error = exec_error
 
-            if not execution_success:
-                flash(f"Code execution failed: {error}. Please review the output.", "danger")
-            else:
+            if execution_success:
                 flash("Code generated and executed successfully!", "success")
+                app.logger.info("ML code generation and execution succeeded.")
+            else:
+                flash(f"Code execution failed: {error}. Please review the output.", "danger")
+                app.logger.error(f"Code execution failed with error: {error}")
 
             session.modified = True
 
         except Exception as e:
             error = str(e)
-            flash(f"Error generating or executing code: {e}", "danger")
-            app.logger.error(f"Error in ML code generation/execution: {e}", exc_info=True)
+            flash(f"Error generating or executing code: {error}", "danger")
+            app.logger.error(f"Exception in ML code generation/execution: {error}", exc_info=True)
 
+    # Render the page with all context variables to restore form state, output and errors
     return render_template(
         'generate_ml_code.html',
         experiment_idx=experiment_idx,
         selected_experiment=selected_experiment,
-        last_results=selected_experiment,  # Pass to support your template logic
+        last_results=selected_experiment,  # for template logic and display
         df_columns=df_columns,
         available_metrics=available_metrics,
         generated_code=generated_code,
