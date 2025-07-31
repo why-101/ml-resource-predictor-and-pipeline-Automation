@@ -29,7 +29,7 @@ try:
     import google.generativeai as genai
     genai.configure(api_key=os.getenv('GENAI_API_KEY')) # Fetches from .env or environment variables
     sql_model = genai.GenerativeModel("gemini-1.5-flash")
-    gemini_model_for_ml_code = genai.GenerativeModel("gemini-1.5-flash")
+    gemini_model_for_ml_code = genai.GenerativeModel("gemini-2.5-flash")
 except Exception as e:
     print(f"Warning: Could not initialize Google Generative AI. SQL to NoSQL and ML code generation will not work. Error: {e}")
     genai = None # Set to None if import fails
