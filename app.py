@@ -29,7 +29,7 @@ try:
     import google.generativeai as genai
     genai.configure(api_key=os.getenv('GENAI_API_KEY')) # Fetches from .env or environment variables
     sql_model = genai.GenerativeModel("gemini-1.5-flash")
-    gemini_model_for_ml_code = genai.GenerativeModel("gemini-2.5-pro")
+    gemini_model_for_ml_code = genai.GenerativeModel("gemini-2.5-flash")
 except Exception as e:
     print(f"Warning: Could not initialize Google Generative AI. SQL to NoSQL and ML code generation will not work. Error: {e}")
     genai = None # Set to None if import fails
@@ -696,6 +696,7 @@ Details:
 - Dataset Columns: {df_columns} (use these for feature selection and handling)
 - look for null values if there are any remove them first
 - Make sure to handle non-numeric features (e.g., using pd.get_dummies() or LabelEncoder) before model training.
+- Make sure to check shape of features and reshape if required to before applying scaling operation.
 - Preprocessing: {current_preprocessing} (apply this to all feature columns except the target, if not 'None')
 
 {"Generate a synthetic dataset using `sklearn.datasets.make_classification` or `make_regression` before training, as no dataset path was provided. The synthetic dataset should mimic the given 'Number of Records' and 'Number of Features'." if mode_choice_manual else "Load the dataset from the provided Dataset Path. If 'dataset_path' is 'None', generate synthetic data as a fallback."}
