@@ -702,7 +702,7 @@ Details:
 {"Generate a synthetic dataset using `sklearn.datasets.make_classification` or `make_regression` before training, as no dataset path was provided. The synthetic dataset should mimic the given 'Number of Records' and 'Number of Features'." if mode_choice_manual else "Load the dataset from the provided Dataset Path. If 'dataset_path' is 'None', generate synthetic data as a fallback."}
 
 Required Steps:
-- Split data using `train_test_split` with a test_size of {1 - selected_experiment['split_ratio']:.2f}.
+- Split data using `train_test_split` with a test_size of {selected_experiment['split_ratio']:.2f}.
 - Apply the specified preprocessing.
 - Train the model.
 - Predict on the test set.
